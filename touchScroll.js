@@ -1,14 +1,39 @@
 (function($) {
 	$.fn.touchScroll = function(options) {
 		var settings = {
-			friction: 0.9
+			friction: 0.9,
+			boundaries: {top: 0, left: 0, width: Infinity, height: Infinity}
 		};
-
+		
 		$.extend(settings, options);
 		
+		var Point = function(left, top) {
+			this.left = left || 0;
+			this.top = top || 0;
+		};
+		
+		Point.prototype.clone = function() {
+			return new Point(this.left, this.top);
+		};
+
+		Point.prototype.subtract = function(point) {
+			return new Point(this.left - point.left, this.top - point.top);
+		};
+
+		Point.prototype.toString = function(precision) {
+			return this.left.toFixed(precision || 2) + ', ' + this.top.toFixed(precision || 2);
+		};
+		
+		var getComputedValue = function(value) {
+			return typeof(value) == 'function' ? value() : value;
+		};
+
+		var getTouchPosition = function(touch) {
+			return new Point(touch.clientX, touch.clientY);
+		};
+		
 		return this.each(function() {
-			var $container = $(this);
-			$container.wrapInner($('<div />', { 'class': 'touchscroll-wrapper' }));
+			var $container = $(this).wrapInner($('<div />', { 'class': 'touchscroll-wrapper' }));
 			var $content = $container.find('.touchscroll-wrapper')
 				.css({
 					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
@@ -17,38 +42,31 @@
 					'-webkit-transition-timing-function': 'ease-out'
 			});
 			
-			var contentPosition =   { left: 0, top: 0 };
-			var touchPosition =     { left: 0, top: 0 };
-			var delta =             { left: 0, top: 0 };
-			
+			var contentPosition = new Point();
+			var touchPosition = new Point();
+			var delta = new Point();			
 			var throwInterval = null;
 			
-			var getTouchPosition = function(touch) {
-				return {
-					left: touch.clientX,
-					top: touch.clientY
-				};
-			};
-			
 			var updateContentPosition = function() {
+				contentPosition.left = Math.min(Math.max(getComputedValue(settings.boundaries.left), contentPosition.left), getComputedValue(settings.boundaries.width));
+				contentPosition.top = Math.min(Math.max(getComputedValue(settings.boundaries.top), contentPosition.top), getComputedValue(settings.boundaries.height));
+				
 				$content.css('-webkit-transform', 'translate3d(' + (-contentPosition.left) + 'px, ' + (-contentPosition.top) + 'px, 0px)');
 				
 				// TODO: Debug
-				$('#content-position').val(contentPosition.left.toFixed(2) + ', ' + contentPosition.top.toFixed(2));
-				$('#touch-position').val(touchPosition.left.toFixed(2) + ', ' + touchPosition.top.toFixed(2));
+				$('#content-position').val(contentPosition);
+				$('#touch-position').val(touchPosition);
 			};
 			
 			var touchstart = function(e) {
+				$('#touches').val(event.touches.length + ', ' + event.changedTouches.length + ', ' + event.targetTouches.length);
 				if (event.touches.length == 1) {
 					e.preventDefault();
 					
 					clearInterval(throwInterval);
-					touchPosition = getTouchPosition(event.touches[0]);
 					
-					delta = {
-						left: 0,
-						top: 0
-					};
+					touchPosition = getTouchPosition(event.touches[0]);
+					delta = new Point();
 					
 					// TODO: Debug
 					$('#momentum').removeClass('active');
@@ -56,21 +74,17 @@
 			};
 			
 			var touchend = function(e) {
+				$('#touches').val(event.touches.length + ', ' + event.changedTouches.length + ', ' + event.targetTouches.length);
+				
 				if(Math.abs(delta.left) > 0 || Math.abs(delta.top) > 0) {
-					var momentum = {
-						left: delta.left,
-						top: delta.top
-					};
+					var momentum = delta.clone();
 					
 					clearInterval(throwInterval);
 					
 					throwInterval = setInterval(function() {
-						momentum = {
-							left: momentum.left * settings.friction,
-							top: momentum.top * settings.friction
-						};
+						momentum = new Point(momentum.left * settings.friction, momentum.top * settings.friction);
 						
-						$('#momentum').val(momentum.left.toFixed(2) + ', ' + momentum.top.toFixed(2));
+						$('#momentum').val(momentum);
 						
 						if(Math.abs(momentum.left) + Math.abs(momentum.top) < 0.5) {
 							clearInterval(throwInterval);
@@ -79,10 +93,7 @@
 							$('#momentum').removeClass('active');
 						}
 						
-						contentPosition = {
-							left: contentPosition.left - momentum.left,
-							top: contentPosition.top - momentum.top
-						};
+						contentPosition = contentPosition.subtract(momentum);
 						
 						updateContentPosition();
 					}, 20);
@@ -98,27 +109,17 @@
 					
 					var newTouchPosition = getTouchPosition(event.touches[0]);
 					
-					delta = {
-						left: newTouchPosition.left - touchPosition.left,
-						top: newTouchPosition.top - touchPosition.top
-					};
-					
-					contentPosition = {
-						left: contentPosition.left - delta.left,
-						top: contentPosition.top - delta.top
-					};
-					
+					delta = newTouchPosition.subtract(touchPosition);
+					contentPosition = contentPosition.subtract(delta);
 					touchPosition = newTouchPosition;
+					
 					updateContentPosition();
 				} else {
-					delta = {
-						left: 0,
-						top: 0
-					};
+					delta = new Point();
 				}
 				
 				// TODO: Debug
-				$('#delta').val(delta.left.toFixed(2) + ', ' + delta.top.toFixed(2));
+				$('#delta').val(delta);
 			};
 			
 			$(this).bind('touchstart.touchScroll', touchstart);

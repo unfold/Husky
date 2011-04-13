@@ -4,11 +4,16 @@
 		<meta charset=utf-8 />
 		<title>TouchScroll.js example</title>
 		<style>
+			body, html {
+				margin: 0;
+			}
+			
 			#container .box {
 				width: 500px;
 				height: 500px;
 				margin-bottom: 100px;
 				background: #ccc;
+				border: 1px solid #999;
 			}
 			
 			#debug-panel {
@@ -38,10 +43,11 @@
 	</head>
 	<body>
 		<div id="debug-panel">
-			Content position: <input id="content-position" /><br />
-			Touch position: <input id="touch-position" /><br />
-			Delta: <input id="delta" /><br />
-			Momentum: <input id="momentum" /><br />
+			Touches: <input type="text" id="touches" /><br />
+			Content position: <input type="text" id="content-position" /><br />
+			Touch position: <input type="text" id="touch-position" /><br />
+			Delta: <input type="text" id="delta" /><br />
+			Momentum: <input type="text" id="momentum" /><br />
 		</div>
 		
 		<div id="container">
@@ -53,11 +59,18 @@
 			$(function() {
 				var $container = $('#container');
 				
-				for (var i = 0; i < 50; i++) {
+				for (var i = 0; i < 10; i++) {
 					$(container).append($('<div />', {'class': 'box'}));
 				}
 				
-				$container.touchScroll();
+				$container.touchScroll({boundaries: {
+					left: 0,
+					top: 0,
+					width: 0,
+					height: function() {
+						return $container.height() - $(window).height();
+					}
+				}});
 			});
 		</script>
 	</body>
