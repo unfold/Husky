@@ -1,7 +1,7 @@
 (function($) {
 	$.fn.touchScroll = function(options) {
 		var settings = {
-			friction: .9
+			friction: 0.9
 		};
 
 		$.extend(settings, options);
@@ -17,9 +17,9 @@
 					'-webkit-transition-timing-function': 'ease-out'
 			});
 			
-			var contentPosition = 	{ left: 0, top: 0 };
-			var touchPosition = 	{ left: 0, top: 0 };
-			var delta = 			{ left: 0, top: 0 };
+			var contentPosition =   { left: 0, top: 0 };
+			var touchPosition =     { left: 0, top: 0 };
+			var delta =             { left: 0, top: 0 };
 			
 			var throwInterval = null;
 			
@@ -32,7 +32,11 @@
 			
 			var updateContentPosition = function() {
 				$content.css('-webkit-transform', 'translate3d(' + (-contentPosition.left) + 'px, ' + (-contentPosition.top) + 'px, 0px)');
-			}
+				
+				// TODO: Debug
+				$('#content-position').val(contentPosition.left.toFixed(2) + ', ' + contentPosition.top.toFixed(2));
+				$('#touch-position').val(touchPosition.left.toFixed(2) + ', ' + touchPosition.top.toFixed(2));
+			};
 			
 			var touchstart = function(e) {
 				if (event.touches.length == 1) {
@@ -58,7 +62,7 @@
 							top: momentum.top * settings.friction
 						};
 						
-						if(Math.abs(momentum.left) + Math.abs(momentum.top) < .5) {
+						if(Math.abs(momentum.left) + Math.abs(momentum.top) < 0.5) {
 							clearInterval(throwInterval);
 						}
 						
@@ -96,11 +100,14 @@
 						top: 0
 					};
 				}
+				
+				// TODO: Debug
+				$('#delta').val(delta.left.toFixed(2) + ', ' + delta.top.toFixed(2));
 			};
 			
-			$(this).bind('touchstart.sled', touchstart);
-			$(this).bind('touchend.sled', touchend);
-			$(this).bind('touchmove.sled', touchmove);
+			$(this).bind('touchstart.touchScroll', touchstart);
+			$(this).bind('touchend.touchScroll', touchend);
+			$(this).bind('touchmove.touchScroll', touchmove);
 		});
 	};
 })(jQuery);
