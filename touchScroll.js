@@ -45,6 +45,11 @@
 					clearInterval(throwInterval);
 					touchPosition = getTouchPosition(event.touches[0]);
 					
+					delta = {
+						left: 0,
+						top: 0
+					};
+					
 					// TODO: Debug
 					$('#momentum').removeClass('active');
 				}
