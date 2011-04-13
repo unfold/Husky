@@ -63,14 +63,7 @@
 					$(container).append($('<div />', {'class': 'box'}));
 				}
 				
-				$container.touchScroll({boundaries: {
-					left: 0,
-					top: 0,
-					width: 0,
-					height: function() {
-						return $container.height() - $(window).height();
-					}
-				}});
+				$container.touchScroll();
 			});
 		</script>
 	</body>

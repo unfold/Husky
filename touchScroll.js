@@ -1,10 +1,9 @@
 (function($) {
-	$.fn.touchScroll = function(options) {
+	$.fn.touchScroll = function(options, boundaries) {
 		var settings = {
-			friction: 0.9,
-			boundaries: {top: 0, left: 0, width: Infinity, height: Infinity}
+			friction: 0.9
 		};
-		
+
 		$.extend(settings, options);
 		
 		var Point = function(left, top) {
@@ -43,13 +42,24 @@
 			});
 			
 			var contentPosition = new Point();
+			var contentBoundaries = $.extend({
+				left: 0,
+				top: 0,
+				width: function() {
+					return $content.width() - $(window).width();
+				},
+				height: function() {
+					return $content.height() - $(window).height();
+				}
+			}, boundaries);
 			var touchPosition = new Point();
-			var delta = new Point();			
+			var delta = new Point();
+
 			var throwInterval = null;
 			
 			var updateContentPosition = function() {
-				contentPosition.left = Math.min(Math.max(getComputedValue(settings.boundaries.left), contentPosition.left), getComputedValue(settings.boundaries.width));
-				contentPosition.top = Math.min(Math.max(getComputedValue(settings.boundaries.top), contentPosition.top), getComputedValue(settings.boundaries.height));
+				contentPosition.left = Math.min(Math.max(getComputedValue(contentBoundaries.left), contentPosition.left), getComputedValue(contentBoundaries.width));
+				contentPosition.top = Math.min(Math.max(getComputedValue(contentBoundaries.top), contentPosition.top), getComputedValue(contentBoundaries.height));
 				
 				$content.css('-webkit-transform', 'translate3d(' + (-contentPosition.left) + 'px, ' + (-contentPosition.top) + 'px, 0px)');
 				
@@ -59,7 +69,7 @@
 			};
 			
 			var touchstart = function(e) {
-				$('#touches').val(event.touches.length + ', ' + event.changedTouches.length + ', ' + event.targetTouches.length);
+				$('#touches').val('t: ' + event.touches.length + ', c: ' + event.changedTouches.length + ', ta: ' + event.targetTouches.length);
 				if (event.touches.length == 1) {
 					e.preventDefault();
 					
@@ -74,7 +84,7 @@
 			};
 			
 			var touchend = function(e) {
-				$('#touches').val(event.touches.length + ', ' + event.changedTouches.length + ', ' + event.targetTouches.length);
+				$('#touches').val('t: ' + event.touches.length + ', c: ' + event.changedTouches.length + ', ta: ' + event.targetTouches.length);
 				
 				if(Math.abs(delta.left) > 0 || Math.abs(delta.top) > 0) {
 					var momentum = delta.clone();
