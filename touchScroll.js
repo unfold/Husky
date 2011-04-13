@@ -44,11 +44,14 @@
 					
 					clearInterval(throwInterval);
 					touchPosition = getTouchPosition(event.touches[0]);
+					
+					// TODO: Debug
+					$('#momentum').removeClass('active');
 				}
 			};
 			
 			var touchend = function(e) {
-				if(Math.abs(delta.left) > 0 && Math.abs(delta.top) > 0) {
+				if(Math.abs(delta.left) > 0 || Math.abs(delta.top) > 0) {
 					var momentum = {
 						left: delta.left,
 						top: delta.top
@@ -62,8 +65,13 @@
 							top: momentum.top * settings.friction
 						};
 						
+						$('#momentum').val(momentum.left.toFixed(2) + ', ' + momentum.top.toFixed(2));
+						
 						if(Math.abs(momentum.left) + Math.abs(momentum.top) < 0.5) {
 							clearInterval(throwInterval);
+
+							// TODO: Debug
+							$('#momentum').removeClass('active');
 						}
 						
 						contentPosition = {
@@ -73,6 +81,9 @@
 						
 						updateContentPosition();
 					}, 20);
+					
+					// TODO: Debug
+					$('#momentum').addClass('active');
 				}
 			};
 			
