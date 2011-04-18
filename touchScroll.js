@@ -2,7 +2,8 @@
 	$.fn.touchScroll = function(options, boundaries) {
 		var settings = {
 			debug: false,
-			threshold: 10,
+			moveThreshold: 4,
+			flickThreshold: 10,
 			duration: 1.5,
 			friction: 0.998
 		};
@@ -20,6 +21,7 @@
 				'-webkit-transition-timing-function': 'cubic-bezier(0.190, 1.000, 0.220, 1.000)' // easeOutExpo
 			});
 			
+			var moved;
 			var delta = new WebKitCSSMatrix();
 			var touchPosition = new WebKitCSSMatrix();
 			var contentPosition = new WebKitCSSMatrix();
@@ -65,6 +67,8 @@
 					delta.e = 0;
 					delta.f = 0;
 					
+					moved = false;
+					
 					setTransitionDuration(0);
 					updateContentPosition();
 					
@@ -76,7 +80,7 @@
 			};
 			
 			var touchend = function(e) {
-				if (Math.abs(delta.e) > settings.threshold || Math.abs(delta.f) > settings.threshold) {
+				if (Math.abs(delta.e) > settings.flickThreshold || Math.abs(delta.f) > settings.flickThreshold) {
 					var momentum = new WebKitCSSMatrix(delta);
 					momentum.e *= settings.friction;
 					momentum.f *= settings.friction;
@@ -92,6 +96,20 @@
 						$('#momentum').addClass('active').val(momentum.e.toFixed(2) + ', ' + momentum.f.toFixed(2));
 					}
 				} else {
+					// Dispatch click event
+					if (!moved) {
+						var touch = event.changedTouches[0];
+						var target = touch.target;
+						
+						while (target.nodeType != 1) {
+							target = target.parentNode;
+						}
+						
+						console.log(target);
+						$(target).trigger('focus');
+						$(target).trigger('click');
+					}
+					
 					setTransitionDuration(0);
 				}
 			};
@@ -107,6 +125,8 @@
 					
 					contentPosition.e -= delta.e;
 					contentPosition.f -= delta.f;
+					
+					moved = Math.abs(delta.e) > settings.moveThreshold || Math.abs(delta.f) > settings.moveThreshold;
 					
 					updateContentPosition();
 				} else {
