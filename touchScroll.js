@@ -1,47 +1,28 @@
 (function($) {
 	$.fn.touchScroll = function(options, boundaries) {
 		var settings = {
-			friction: 0.9
+			debug: false,
+			threshold: 10,
+			duration: 1.5,
+			friction: 0.998
 		};
-
+		
 		$.extend(settings, options);
-		
-		var Point = function(left, top) {
-			this.left = left || 0;
-			this.top = top || 0;
-		};
-		
-		Point.prototype.clone = function() {
-			return new Point(this.left, this.top);
-		};
-
-		Point.prototype.subtract = function(point) {
-			return new Point(this.left - point.left, this.top - point.top);
-		};
-
-		Point.prototype.toString = function(precision) {
-			return this.left.toFixed(precision || 2) + ', ' + this.top.toFixed(precision || 2);
-		};
 		
 		var getComputedValue = function(value) {
 			return typeof(value) == 'function' ? value() : value;
 		};
-
-		var getTouchPosition = function(touch) {
-			return new Point(touch.clientX, touch.clientY);
-		};
 		
 		return this.each(function() {
-			var $container = $(this).wrapInner($('<div />', { 'class': 'touchscroll-wrapper' }));
-			var $content = $container.find('.touchscroll-wrapper')
-				.css({
-					'-webkit-transform': 'translate3d(0px, 0px, 0px)',
-					'-webkit-transition-property': 'translate3d',
-					'-webkit-transition-duration': '0s',
-					'-webkit-transition-timing-function': 'ease-out'
+			var $container = $(this).wrapInner($('<div />', {'class': 'touchscroll-wrapper'}));
+			var $content = $container.find('.touchscroll-wrapper').css({
+				'-webkit-transition-property': 'translate3d',
+				'-webkit-transition-timing-function': 'cubic-bezier(0.190, 1.000, 0.220, 1.000)' // easeOutExpo
 			});
 			
-			var contentPosition = new Point();
+			var delta = new WebKitCSSMatrix();
+			var touchPosition = new WebKitCSSMatrix();
+			var contentPosition = new WebKitCSSMatrix();
 			var contentBoundaries = $.extend({
 				left: 0,
 				top: 0,
@@ -52,89 +33,104 @@
 					return $content.height() - $(window).height();
 				}
 			}, boundaries);
-			var touchPosition = new Point();
-			var delta = new Point();
-
-			var throwInterval = null;
+			
+			var setTransitionDuration = function(duration) {
+				$content.css('-webkit-transition-duration', duration + 's');
+			}
 			
 			var updateContentPosition = function() {
-				contentPosition.left = Math.min(Math.max(getComputedValue(contentBoundaries.left), contentPosition.left), getComputedValue(contentBoundaries.width));
-				contentPosition.top = Math.min(Math.max(getComputedValue(contentBoundaries.top), contentPosition.top), getComputedValue(contentBoundaries.height));
+				// Apply constraints
+				//contentPosition.e = Math.min(Math.max(getComputedValue(contentBoundaries.left), contentPosition.e), getComputedValue(contentBoundaries.width));
+				//contentPosition.f = Math.min(Math.max(getComputedValue(contentBoundaries.top), contentPosition.f), getComputedValue(contentBoundaries.height));
 				
-				$content.css('-webkit-transform', 'translate3d(' + (-contentPosition.left) + 'px, ' + (-contentPosition.top) + 'px, 0px)');
+				$content.cssMatrix(contentPosition);
 				
 				// TODO: Debug
-				$('#content-position').val(contentPosition);
-				$('#touch-position').val(touchPosition);
+				if (settings.debug) {
+					$('#content-position').val(contentPosition.e + ', ' + contentPosition.f);
+					$('#touch-position').val(touchPosition.e + ', ' + touchPosition.f);
+				}
 			};
 			
 			var touchstart = function(e) {
-				$('#touches').val('t: ' + event.touches.length + ', c: ' + event.changedTouches.length + ', ta: ' + event.targetTouches.length);
 				if (event.touches.length == 1) {
 					e.preventDefault();
 					
-					clearInterval(throwInterval);
+					contentPosition = $content.cssMatrix();
 					
-					touchPosition = getTouchPosition(event.touches[0]);
-					delta = new Point();
+					var touch = event.touches[0];
+					touchPosition.e = touch.clientX;
+					touchPosition.f = touch.clientY;
+					
+					delta.e = 0;
+					delta.f = 0;
+					
+					setTransitionDuration(0);
+					updateContentPosition();
 					
 					// TODO: Debug
-					$('#momentum').removeClass('active');
+					if (settings.debug) {
+						$('#momentum').removeClass('active');
+					}
 				}
 			};
 			
 			var touchend = function(e) {
-				$('#touches').val('t: ' + event.touches.length + ', c: ' + event.changedTouches.length + ', ta: ' + event.targetTouches.length);
-				
-				if(Math.abs(delta.left) > 0 || Math.abs(delta.top) > 0) {
-					var momentum = delta.clone();
+				if (Math.abs(delta.e) > settings.threshold || Math.abs(delta.f) > settings.threshold) {
+					var momentum = new WebKitCSSMatrix(delta);
+					momentum.e *= settings.friction;
+					momentum.f *= settings.friction;
 					
-					clearInterval(throwInterval);
+					contentPosition.e -= momentum.e * 10;
+					contentPosition.f -= momentum.f * 10;
 					
-					throwInterval = setInterval(function() {
-						momentum = new Point(momentum.left * settings.friction, momentum.top * settings.friction);
-						
-						$('#momentum').val(momentum);
-						
-						if(Math.abs(momentum.left) + Math.abs(momentum.top) < 0.5) {
-							clearInterval(throwInterval);
+					setTransitionDuration(settings.duration);
+					updateContentPosition();
 
-							// TODO: Debug
-							$('#momentum').removeClass('active');
-						}
-						
-						contentPosition = contentPosition.subtract(momentum);
-						
-						updateContentPosition();
-					}, 20);
-					
 					// TODO: Debug
-					$('#momentum').addClass('active');
+					if (settings.debug) {
+						$('#momentum').addClass('active').val(momentum.e + ', ' + momentum.f);
+					}
+				} else {
+					setTransitionDuration(0);
 				}
 			};
 			
 			var touchmove = function(e) {
 				if (event.touches.length == 1) {
-					e.preventDefault();
+					var touch = event.touches[0];
+					delta.e = touchPosition.e - touch.clientX;
+					delta.f = touchPosition.f - touch.clientY;
+
+					touchPosition.e = touch.clientX;
+					touchPosition.f = touch.clientY;
 					
-					var newTouchPosition = getTouchPosition(event.touches[0]);
-					
-					delta = newTouchPosition.subtract(touchPosition);
-					contentPosition = contentPosition.subtract(delta);
-					touchPosition = newTouchPosition;
+					contentPosition.e -= delta.e;
+					contentPosition.f -= delta.f;
 					
 					updateContentPosition();
 				} else {
-					delta = new Point();
+					delta.e = 0;
+					delta.f = 0;
 				}
 				
 				// TODO: Debug
-				$('#delta').val(delta);
+				if (settings.debug) {
+					$('#delta').val(delta.e + ', ' + delta.f);
+				}
 			};
 			
 			$(this).bind('touchstart.touchScroll', touchstart);
 			$(this).bind('touchend.touchScroll', touchend);
 			$(this).bind('touchmove.touchScroll', touchmove);
 		});
+	};
+	
+	$.fn.cssMatrix = function(matrix) {
+		if (matrix) {
+			return this.css('-webkit-transform', matrix);
+		}
+		
+		return new WebKitCSSMatrix(this.css('-webkit-transform'));
 	};
 })(jQuery);

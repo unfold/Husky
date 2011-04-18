@@ -60,10 +60,10 @@
 				var $container = $('#container');
 				
 				for (var i = 0; i < 10; i++) {
-					$(container).append($('<div />', {'class': 'box'}));
+					$(container).append($('<div />', {'class': 'box', 'style': 'background: #' + ((1 << 24) * Math.random() | 0).toString(16)}));
 				}
 				
-				$container.touchScroll();
+				$container.touchScroll({debug: true});
 			});
 		</script>
 	</body>
