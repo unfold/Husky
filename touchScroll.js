@@ -40,15 +40,15 @@
 			
 			var updateContentPosition = function() {
 				// Apply constraints
-				//contentPosition.e = Math.min(Math.max(getComputedValue(contentBoundaries.left), contentPosition.e), getComputedValue(contentBoundaries.width));
-				//contentPosition.f = Math.min(Math.max(getComputedValue(contentBoundaries.top), contentPosition.f), getComputedValue(contentBoundaries.height));
+				contentPosition.e = Math.min(getComputedValue(contentBoundaries.left), Math.max(-getComputedValue(contentBoundaries.width), contentPosition.e));
+				contentPosition.f = Math.min(getComputedValue(contentBoundaries.top), Math.max(-getComputedValue(contentBoundaries.height), contentPosition.f));
 				
 				$content.cssMatrix(contentPosition);
 				
 				// TODO: Debug
 				if (settings.debug) {
-					$('#content-position').val(contentPosition.e + ', ' + contentPosition.f);
-					$('#touch-position').val(touchPosition.e + ', ' + touchPosition.f);
+					$('#content-position').val(contentPosition.e.toFixed(2) + ', ' + contentPosition.f.toFixed(2));
+					$('#touch-position').val(touchPosition.e.toFixed(2) + ', ' + touchPosition.f.toFixed(2));
 				}
 			};
 			
@@ -89,7 +89,7 @@
 
 					// TODO: Debug
 					if (settings.debug) {
-						$('#momentum').addClass('active').val(momentum.e + ', ' + momentum.f);
+						$('#momentum').addClass('active').val(momentum.e.toFixed(2) + ', ' + momentum.f.toFixed(2));
 					}
 				} else {
 					setTransitionDuration(0);
@@ -116,7 +116,7 @@
 				
 				// TODO: Debug
 				if (settings.debug) {
-					$('#delta').val(delta.e + ', ' + delta.f);
+					$('#delta').val(delta.e.toFixed(2) + ', ' + delta.f.toFixed(2));
 				}
 			};
 			
